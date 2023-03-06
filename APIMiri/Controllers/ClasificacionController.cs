@@ -1,0 +1,333 @@
+﻿using Microsoft.AspNetCore.Mvc;
+using APIMiri.Models;
+using APIMiri.Models.db;
+using Microsoft.EntityFrameworkCore;
+using APIMiri.Data;
+
+namespace APIMiri.Controllers
+{
+    [ApiController]
+    [Route("clasificacionController")]
+    public class ClasificacionController : Controller
+    {
+        private readonly DbMiriContext _dbContext;
+        private respuestaAPIMiri msj = new respuestaAPIMiri();
+
+        public ClasificacionController(DbMiriContext dbContext)
+        {
+            _dbContext = dbContext;
+         
+        }
+        [HttpGet("readClasificaciones/{idtema}/{iduser}")]
+        public async Task<ActionResult<List<MClasificaciones>>> Get(int idtema, int iduser)
+        {
+            var query = await (from cc in _dbContext.CatClasificacions
+                               join ct in _dbContext.ClasificacionTemas on cc.IdClasificacion equals ct.IdClasificacion
+                               join uct in _dbContext.UsuariosCts on ct.IdCt equals uct.IdCt
+                               where ct.IdTema == idtema && uct.IdUsuario == iduser
+                               select new MClasificaciones
+                               {
+                                   idClasif = cc.IdClasificacion,
+                                   Clasificacion = cc.Clasificacion
+                               }).ToListAsync();
+            return query;
+        }
+        [HttpPost("createClasificacionTema")]
+        public async Task<ActionResult<respuestaAPIMiri>> Post(MClasificiacionTema _clasificacionTema)
+        {
+            using (var dbContextTransaction = _dbContext.Database.BeginTransaction())
+            {
+                try
+                {
+                    if (_clasificacionTema._idTema <= 0 || _clasificacionTema._idUser <= 0)
+                    {
+                        msj.codigo = -300;
+                        msj.Descripcion = "ID TEMA Ó ID USUARIO NO VALIDO";
+                    }
+                    else
+                    {
+                        var existeUser = await _dbContext.Usuarios.FindAsync(_clasificacionTema._idUser);
+                        if (existeUser != null)
+                        {
+                            var existeClasificacion = _dbContext.CatClasificacions.Where(c => c.Clasificacion == _clasificacionTema._nombreClasificacion).FirstOrDefault<CatClasificacion>();
+                            if (existeClasificacion is null)
+                            {
+                                var c = new CatClasificacion
+                                {
+                                    Clasificacion = _clasificacionTema._nombreClasificacion
+                                };
+                                _dbContext.CatClasificacions.Add(c);
+                                await _dbContext.SaveChangesAsync();
+                                var obtenerIDClasificacion = _dbContext.CatClasificacions.Where(c => c.Clasificacion == _clasificacionTema._nombreClasificacion).Select(c => c.IdClasificacion).FirstOrDefault();
+                                var existeIdTema = await _dbContext.CatTemas.FindAsync(_clasificacionTema._idTema);
+                                if(existeIdTema != null)
+                                {
+                                    var cT = new ClasificacionTema
+                                    {
+                                        IdTema = _clasificacionTema._idTema,
+                                        IdClasificacion = obtenerIDClasificacion
+                                    };
+
+                                    _dbContext.ClasificacionTemas.Add(cT);
+                                    await _dbContext.SaveChangesAsync();
+
+                                    var obtenerIDCT = _dbContext.ClasificacionTemas.Where(c => c.IdClasificacion == obtenerIDClasificacion).Select(c => c.IdCt).FirstOrDefault();
+
+                                    var uct = new UsuariosCt
+                                    {
+                                        IdUsuario = _clasificacionTema._idUser,
+                                        IdCt = obtenerIDCT
+                                    };
+                                    _dbContext.UsuariosCts.Add(uct);
+                                    await _dbContext.SaveChangesAsync();
+                                    dbContextTransaction.Commit();
+                                    msj.codigo = 111;
+                                    msj.Descripcion = "CLASIFICACION CREADA CON EXITO";
+                                }
+                                else
+                                {
+                                    msj.codigo = 333;
+                                    msj.Descripcion = "ID TEMA NO EXISTE";
+                                }
+                            }
+                            else
+                            {
+                                msj.codigo = 222;
+                                msj.Descripcion = "LA CLASIFICACION YA EXISTE";
+                            }
+                        }
+                        else
+                        {
+                            msj.codigo = 333;
+                            msj.Descripcion = "ID USUARIO NO EXISTE";
+                        }
+
+                    }
+
+
+                }
+                catch (Exception ex)
+                {
+                    dbContextTransaction.Rollback();
+                    msj.codigo = -200;
+                    msj.Descripcion = "PROBLEMAS CON EL SERVIDOR - Error: " + ex;
+                }
+            }
+            return msj;
+        }
+
+        [HttpPut("updateClasificacion")]
+        public async Task<ActionResult<respuestaAPIMiri>> Put(MClasificaciones _clasificacion)
+        {
+
+            using (var dbContextTransaction = _dbContext.Database.BeginTransaction())
+            {
+                try
+                {
+                    var updateClasificacion = _dbContext.CatClasificacions.Where(c => c.IdClasificacion == _clasificacion.idClasif).FirstOrDefault<CatClasificacion>();
+                    if (updateClasificacion != null)
+                    {
+                        updateClasificacion.Clasificacion = _clasificacion.Clasificacion;
+                        await _dbContext.SaveChangesAsync();
+                        dbContextTransaction.Commit();
+                        msj.codigo = 444;
+                        msj.Descripcion = "NOMBRE ACTUALIZADO CON EXITO";
+                    }
+                    else
+                    {
+                        msj.codigo = 333;
+                        msj.Descripcion = "LA CLASIFICACIÓN NO EXISTE";
+                    }
+                }
+                catch (Exception ex)
+                {
+                    dbContextTransaction.Rollback();
+                    msj.codigo = -200;
+                    msj.Descripcion = "PROBLEMAS CON EL SERVIDOR - Error: " + ex;
+                }
+            }
+            return msj;
+        }
+
+        [HttpDelete("deleteClasificacion/{idclasificacion}")]
+        public async Task<ActionResult<respuestaAPIMiri>> DeleteClasificacion( int idclasificacion)
+        {
+            GrupoController _grupoController = new GrupoController(_dbContext);
+            //Obtener todos los grupos que pertenecen a cada clasificación para eliminar
+            var ListidG = await (from g in _dbContext.CatGrupos
+                                   join gct in _dbContext.GrupoClasificacionTemas on g.IdGrupo equals gct.IdGrupo
+                                   join ct in _dbContext.ClasificacionTemas on gct.IdCt equals ct.IdCt
+                                   where ct.IdClasificacion == idclasificacion
+                                   select new GrupoClasificacionTema
+                                   {
+                                       IdGrupo = gct.IdGrupo
+                                   }).ToListAsync();
+            if (ListidG.Count > 0)
+            {
+                //Aqui elimino todos los grupos que pertenecen en la clasificación
+                foreach (var item in ListidG)
+                {
+                    await _grupoController.DeleteGrupo(item.IdGrupo);
+                }
+            }
+            using (var dbContextTransaction = _dbContext.Database.BeginTransaction())
+            {
+                try
+                {
+
+                    if (idclasificacion <= 0)
+                    {
+                        msj.codigo = -300;
+                        msj.Descripcion = "ID CLASIFICACIÓN NO VALIDO";
+                    }
+                    else
+                    {
+                       
+                        var deleteClasificacionTema = await _dbContext.ClasificacionTemas.Where(c => c.IdClasificacion == idclasificacion).FirstOrDefaultAsync<ClasificacionTema>();
+                        if(deleteClasificacionTema != null)
+                        {
+                            var obtenerIDCT = _dbContext.ClasificacionTemas.Where(c => c.IdClasificacion == idclasificacion).Select(c => c.IdCt).FirstOrDefault();
+                            var deleteUsuariosCT = await _dbContext.UsuariosCts.Where(c => c.IdCt == obtenerIDCT).ToListAsync<UsuariosCt>();
+                            if(deleteUsuariosCT != null)
+                            {
+                                _dbContext.UsuariosCts.RemoveRange(deleteUsuariosCT);
+                                await _dbContext.SaveChangesAsync();
+                               
+                               
+                                    _dbContext.Entry(deleteClasificacionTema).State = Microsoft.EntityFrameworkCore.EntityState.Deleted;
+                                    await _dbContext.SaveChangesAsync();
+
+                                    var deleteClasificacion = await _dbContext.CatClasificacions.FindAsync(idclasificacion);
+                                    if (deleteClasificacion != null)
+                                    {
+                                        _dbContext.Entry(deleteClasificacion).State = Microsoft.EntityFrameworkCore.EntityState.Deleted;
+                                        await _dbContext.SaveChangesAsync();
+                                        dbContextTransaction.Commit();
+                                        msj.codigo = 555;
+                                        msj.Descripcion = "CLASIFICIACIÓN ELIMINADA CON EXITO";
+                                    }
+                                    else
+                                    {
+                                        msj.codigo = 333;
+                                        msj.Descripcion = "LA CLASIFICACIÓN NO EXISTE";
+                                    }
+                                
+                            }
+                            else
+                            {
+                                msj.codigo = 333;
+                                msj.Descripcion = "NO EXISTE ID CLASIFICACION TEMA EN USUARIOSCT";
+                            }
+                        }
+                        else
+                        {
+                            msj.codigo = 333;
+                            msj.Descripcion = "NO EXISTE ID CLASIFICACION EN CLASIFICACION-TEMA";
+                        }
+                    }
+                }
+                catch (Exception ex)
+                {
+                    dbContextTransaction.Rollback();
+                    msj.codigo = -200;
+                    msj.Descripcion = "PROBLEMAS CON EL SERVIDOR - Error: " + ex;
+                }
+
+            }
+            return msj;
+        }
+
+        [HttpPost("compartirClasificacion/{idclasif}/{iduser}")]
+        public async Task<ActionResult<respuestaAPIMiri>> Post(int idclasif, int iduser)
+        {
+            using (var dbContextTransaction = _dbContext.Database.BeginTransaction())
+            {
+                try
+                {
+                    if (iduser <= 0)
+                    {
+                        msj.codigo = -300;
+                        msj.Descripcion = "ID USUARIO NO VALIDO";
+                    }
+                    else
+                    {
+                        var existeUser = await _dbContext.Usuarios.FindAsync(iduser);
+                        if (existeUser != null)
+                        {
+                            var existeClasif = await _dbContext.CatClasificacions.FindAsync(idclasif);
+                            if (existeClasif != null)
+                            {
+                                var obtenerIDCT = _dbContext.ClasificacionTemas.Where(c => c.IdClasificacion == idclasif).Select(c => c.IdCt).FirstOrDefault();
+                                if(obtenerIDCT > 0)
+                                {
+                                    var compartido = _dbContext.UsuariosCts.Where(c => c.IdCt == obtenerIDCT && c.IdUsuario == iduser).FirstOrDefault<UsuariosCt>();
+                                    if (compartido is null)
+                                    {
+                                        var uct = new UsuariosCt
+                                        {
+                                            IdUsuario = iduser,
+                                            IdCt = obtenerIDCT
+                                        };
+                                        _dbContext.UsuariosCts.Add(uct);
+                                        //Obtener todos los grupos que pertenecen a cada clasificación
+                                        var ListidGCT = await (from g in _dbContext.CatGrupos
+                                                               join gct in _dbContext.GrupoClasificacionTemas on g.IdGrupo equals gct.IdGrupo
+                                                               join ct in _dbContext.ClasificacionTemas on gct.IdCt equals ct.IdCt
+                                                               where ct.IdClasificacion == idclasif
+                                                               select new GrupoClasificacionTema
+                                                               {
+                                                                   IdGct = gct.IdGct
+                                                               }).ToListAsync();
+                                        foreach (var item2 in ListidGCT)
+                                        {
+                                            var ugct = new UsuariosGct
+                                            {
+                                                IdUsuario = iduser,
+                                                Permiso = 0, //Con permiso 0 - solo puede Leer y descargar
+                                                IdGct = item2.IdGct
+                                            };
+                                            _dbContext.UsuariosGcts.Add(ugct);
+                                        }
+                                        await _dbContext.SaveChangesAsync();
+                                        dbContextTransaction.Commit();
+                                        msj.codigo = 111;
+                                        msj.Descripcion = "CLASIFICACIÓN COMPARTIDA CON EXITO";
+                                    }
+                                    else
+                                    {
+                                        msj.codigo = 222;
+                                        msj.Descripcion = "YA SE COMPARTIÓ LA CLASIFICACIÓN CON ESTE USUARIO";
+                                    }
+                                }
+                                else
+                                {
+                                    msj.codigo = 333;
+                                    msj.Descripcion = "ID CLASIFICIACIÓN NO EXISTE EN CLASIFICIACION-TEMA";
+                                }
+                            }
+                            else
+                            {
+
+                                msj.codigo = 333;
+                                msj.Descripcion = "ID CLASIFICIACIÓN NO EXISTE";
+                            }
+                        }
+                        else
+                        {
+                            msj.codigo = 333;
+                            msj.Descripcion = "ID USUARIO NO EXISTE";
+                        }
+                    }
+                }
+                catch (Exception ex)
+                {
+                    dbContextTransaction.Rollback();
+                    msj.codigo = -200;
+                    msj.Descripcion = "PROBLEMAS CON EL SERVIDOR - Error: " + ex;
+                }
+            }
+            return msj;
+        }
+
+    }
+}
