@@ -118,11 +118,21 @@ namespace APIMiri.Controllers
                     var updateTema = _dbContext.CatTemas.Where(c => c.IdTema == _tema.IdTema).FirstOrDefault<CatTema>();
                     if (updateTema != null)
                     {
-                        updateTema.Tema = _tema.Tema;
-                        await _dbContext.SaveChangesAsync();
-                        dbContextTransaction.Commit();
-                        msj.codigo = 444;
-                        msj.Descripcion = "NOMBRE ACTUALIZADO CON EXITO";
+                        var existeNombreTema = _dbContext.CatTemas.Where(c => c.Tema == _tema.Tema).FirstOrDefault<CatTema>();
+                        if(existeNombreTema is null)
+                        {
+                            updateTema.Tema = _tema.Tema;
+                            await _dbContext.SaveChangesAsync();
+                            dbContextTransaction.Commit();
+                            msj.codigo = 444;
+                            msj.Descripcion = "NOMBRE ACTUALIZADO CON EXITO";
+                        }
+                        else
+                        {
+                            msj.codigo = 222;
+                            msj.Descripcion = "EL NOMBRE DE TEMA YA EXISTE EN EL CATALOGO DE TEMAS";
+                        }
+                      
                     }
                     else
                     {
