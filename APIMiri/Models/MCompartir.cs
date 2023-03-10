@@ -2,7 +2,7 @@
 {
     public class MCompartir
     {
-        public int _idtema { get; set; }
-        public string _username { get; set; }
+        public int _idDirectorio { get; set; }
+        public string? _username { get; set; }
     }
 }

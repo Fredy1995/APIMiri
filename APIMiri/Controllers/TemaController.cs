@@ -16,15 +16,33 @@ namespace APIMiri.Controllers
         {
             _dbContext = dbContext;
         }
+        [HttpGet("esTema/{nameTema}")]
+        public async Task<ActionResult<bool>> GetEsTema(string nameTema)
+        {
+            var existeTema = await _dbContext.CatTemas.Where(c => c.Tema == nameTema).FirstOrDefaultAsync<CatTema>();
+            if(existeTema is null)
+            {
+                return false;
+            }
+            else
+            {
+                return true;
+            }
+        }
         [HttpGet("readUsuariosSinTema/{idtema}")]
         public async Task<ActionResult<List<MUsuariosSinTema>>> Get(int idtema)
         {
             List<MUsuariosSinTema> must = new List<MUsuariosSinTema>();
-           var query = await _dbContext.Usuarios.Where(t => !t.TemaUsuarios.Any(d => d.IdUsuario == t.IdUsuario && d.IdTema == idtema)).ToListAsync();
-          foreach(var item in query)
+            var existeTema = await _dbContext.CatTemas.FindAsync(idtema);
+            if (existeTema != null)
             {
-                must.Add(new MUsuariosSinTema { idUsuario=item.IdUsuario,usuario=item.Usuario1});
+                var query = await _dbContext.Usuarios.Where(t => !t.TemaUsuarios.Any(d => d.IdUsuario == t.IdUsuario && d.IdTema == idtema)).ToListAsync();
+                foreach (var item in query)
+                {
+                    must.Add(new MUsuariosSinTema { idUsuario = item.IdUsuario, usuario = item.Usuario1 });
+                }
             }
+         
 
             return must;
         }
@@ -244,15 +262,15 @@ namespace APIMiri.Controllers
                         var existeUser = await _dbContext.Usuarios.FindAsync(iduser);
                         if (existeUser != null)
                         {
-                            var existeTema = await _dbContext.CatTemas.FindAsync(_compartir._idtema);
+                            var existeTema = await _dbContext.CatTemas.FindAsync(_compartir._idDirectorio);
                             if(existeTema != null)
                             {
-                                var compartido = _dbContext.TemaUsuarios.Where(c => c.IdTema == _compartir._idtema && c.IdUsuario == iduser).FirstOrDefault<TemaUsuario>();
+                                var compartido = _dbContext.TemaUsuarios.Where(c => c.IdTema == _compartir._idDirectorio && c.IdUsuario == iduser).FirstOrDefault<TemaUsuario>();
                                 if (compartido is null)
                                 {
                                     var tu = new TemaUsuario
                                     {
-                                        IdTema = _compartir._idtema,
+                                        IdTema = _compartir._idDirectorio,
                                         IdUsuario = iduser
                                     };
                                     _dbContext.TemaUsuarios.Add(tu);
@@ -261,7 +279,7 @@ namespace APIMiri.Controllers
                                     var ListidCT = await (from cc in _dbContext.CatClasificacions
                                                           join ct in _dbContext.ClasificacionTemas on cc.IdClasificacion equals ct.IdClasificacion
                                                           join t in _dbContext.CatTemas on ct.IdTema equals t.IdTema
-                                                          where t.IdTema == _compartir._idtema
+                                                          where t.IdTema == _compartir._idDirectorio
                                                           select new ClasificacionTema
                                                           {
                                                               IdCt = ct.IdCt,

@@ -16,7 +16,51 @@ namespace APIMiri.Controllers
         public ClasificacionController(DbMiriContext dbContext)
         {
             _dbContext = dbContext;
-         
+
+        }
+        [HttpGet("devuelveObjTema/{idClasif}")]
+        public async Task<ActionResult<List<MTemas>>> GetTema(int idClasif)
+        {
+            var query = await (from c in _dbContext.CatClasificacions
+                               join ct in _dbContext.ClasificacionTemas on c.IdClasificacion equals ct.IdClasificacion
+                               join t in _dbContext.CatTemas on ct.IdTema equals t.IdTema
+                               where c.IdClasificacion == idClasif
+                               select new MTemas
+                               {
+                                  IdTema =  t.IdTema,
+                                  Tema = t.Tema
+                               }).ToListAsync();
+            return query;
+        }
+        [HttpGet("esClasificacion/{nameClasif}")]
+        public async Task<ActionResult<bool>> GetEsClasif(string nameClasif)
+        {
+            var existeClasif = await _dbContext.CatClasificacions.Where(c => c.Clasificacion == nameClasif).FirstOrDefaultAsync<CatClasificacion>();
+            if (existeClasif is null)
+            {
+                return false;
+            }
+            else
+            {
+                return true;
+            }
+        }
+        [HttpGet("readUsuariosSinClasif/{idclasif}")]
+        public async Task<ActionResult<List<MUsuariosSinClasificacion>>> Get(int idclasif)
+        {
+            List<MUsuariosSinClasificacion> must = new List<MUsuariosSinClasificacion>();
+            var obtenerIDCT = _dbContext.ClasificacionTemas.Where(c => c.IdClasificacion == idclasif).Select(c => c.IdCt).FirstOrDefault();
+            if(obtenerIDCT > 0)
+            {
+                var query = await _dbContext.Usuarios.Where(t => !t.UsuariosCts.Any(d => d.IdUsuario == t.IdUsuario && d.IdCt == obtenerIDCT)).ToListAsync();
+                foreach (var item in query)
+                {
+                    must.Add(new MUsuariosSinClasificacion { idUsuario = item.IdUsuario, usuario = item.Usuario1 });
+                }
+
+            }
+
+            return must;
         }
         [HttpGet("readClasificaciones/{idtema}/{iduser}")]
         public async Task<ActionResult<List<MClasificaciones>>> Get(int idtema, int iduser)
@@ -127,11 +171,21 @@ namespace APIMiri.Controllers
                     var updateClasificacion = _dbContext.CatClasificacions.Where(c => c.IdClasificacion == _clasificacion.idClasif).FirstOrDefault<CatClasificacion>();
                     if (updateClasificacion != null)
                     {
-                        updateClasificacion.Clasificacion = _clasificacion.Clasificacion;
-                        await _dbContext.SaveChangesAsync();
-                        dbContextTransaction.Commit();
-                        msj.codigo = 444;
-                        msj.Descripcion = "NOMBRE ACTUALIZADO CON EXITO";
+                        var existeNombreClasif = _dbContext.CatClasificacions.Where(c => c.Clasificacion == _clasificacion.Clasificacion).FirstOrDefault<CatClasificacion>(); 
+                        if(existeNombreClasif is null)
+                        {
+                            updateClasificacion.Clasificacion = _clasificacion.Clasificacion;
+                            await _dbContext.SaveChangesAsync();
+                            dbContextTransaction.Commit();
+                            msj.codigo = 444;
+                            msj.Descripcion = "NOMBRE ACTUALIZADO CON EXITO";
+                        }
+                        else
+                        {
+                            msj.codigo = 222;
+                            msj.Descripcion = "EL NOMBRE DE LA CLASIFICACIÓN YA EXISTE EN EL CATALOGO DE CLASIFICACIONES";
+                        }
+                        
                     }
                     else
                     {
@@ -237,13 +291,14 @@ namespace APIMiri.Controllers
             return msj;
         }
 
-        [HttpPost("compartirClasificacion/{idclasif}/{iduser}")]
-        public async Task<ActionResult<respuestaAPIMiri>> Post(int idclasif, int iduser)
+        [HttpPost("compartirClasificacion")]
+        public async Task<ActionResult<respuestaAPIMiri>> Post(MCompartir _compartir)
         {
             using (var dbContextTransaction = _dbContext.Database.BeginTransaction())
             {
                 try
                 {
+                    var iduser = await _dbContext.Usuarios.Where(c => c.Usuario1 == _compartir._username).Select(c => c.IdUsuario).FirstOrDefaultAsync();
                     if (iduser <= 0)
                     {
                         msj.codigo = -300;
@@ -254,10 +309,10 @@ namespace APIMiri.Controllers
                         var existeUser = await _dbContext.Usuarios.FindAsync(iduser);
                         if (existeUser != null)
                         {
-                            var existeClasif = await _dbContext.CatClasificacions.FindAsync(idclasif);
+                            var existeClasif = await _dbContext.CatClasificacions.FindAsync(_compartir._idDirectorio);
                             if (existeClasif != null)
                             {
-                                var obtenerIDCT = _dbContext.ClasificacionTemas.Where(c => c.IdClasificacion == idclasif).Select(c => c.IdCt).FirstOrDefault();
+                                var obtenerIDCT = _dbContext.ClasificacionTemas.Where(c => c.IdClasificacion == _compartir._idDirectorio).Select(c => c.IdCt).FirstOrDefault();
                                 if(obtenerIDCT > 0)
                                 {
                                     var compartido = _dbContext.UsuariosCts.Where(c => c.IdCt == obtenerIDCT && c.IdUsuario == iduser).FirstOrDefault<UsuariosCt>();
@@ -273,7 +328,7 @@ namespace APIMiri.Controllers
                                         var ListidGCT = await (from g in _dbContext.CatGrupos
                                                                join gct in _dbContext.GrupoClasificacionTemas on g.IdGrupo equals gct.IdGrupo
                                                                join ct in _dbContext.ClasificacionTemas on gct.IdCt equals ct.IdCt
-                                                               where ct.IdClasificacion == idclasif
+                                                               where ct.IdClasificacion == _compartir._idDirectorio
                                                                select new GrupoClasificacionTema
                                                                {
                                                                    IdGct = gct.IdGct
