@@ -16,6 +16,36 @@ namespace APIMiri.Controllers
         {
             _dbContext = dbContext;
         }
+        [HttpGet("esGrupo/{nameGrupo}")]
+        public async Task<ActionResult<bool>> GetEsClasif(string nameGrupo)
+        {
+            var existeGrupo = await _dbContext.CatGrupos.Where(c => c.Grupo == nameGrupo).FirstOrDefaultAsync<CatGrupo>();
+            if (existeGrupo is null)
+            {
+                return false;
+            }
+            else
+            {
+                return true;
+            }
+        }
+        [HttpGet("readUsuariosSinGrupo/{idgrupo}")]
+        public async Task<ActionResult<List<MUsuariosSinDirectorio>>> Get(int idgrupo)
+        {
+            List<MUsuariosSinDirectorio> must = new List<MUsuariosSinDirectorio>();
+            var obtenerIDGCT = _dbContext.GrupoClasificacionTemas.Where(c => c.IdGrupo == idgrupo).Select(c => c.IdGct).FirstOrDefault();
+            if (obtenerIDGCT > 0)
+            {
+                var query = await _dbContext.Usuarios.Where(t => !t.UsuariosGcts.Any(d => d.IdUsuario == t.IdUsuario && d.IdGct == obtenerIDGCT)).ToListAsync();
+                foreach (var item in query)
+                {
+                    must.Add(new MUsuariosSinDirectorio { idUsuario = item.IdUsuario, usuario = item.Usuario1 });
+                }
+
+            }
+
+            return must;
+        }
         [HttpGet("readGrupo/{idtema}/{idclasif}/{iduser}")]
         public async Task<ActionResult<IEnumerable<CatGrupo>>> Get(int idtema,int idclasif,int iduser)
         {
@@ -23,7 +53,7 @@ namespace APIMiri.Controllers
                                join gct in _dbContext.GrupoClasificacionTemas on cc.IdGrupo equals gct.IdGrupo
                                join ct in _dbContext.ClasificacionTemas on gct.IdCt equals ct.IdCt
                                join ugct in _dbContext.UsuariosGcts on gct.IdGct equals ugct.IdGct
-                               where ct.IdTema == idtema && ct.IdClasificacion == idclasif && ugct.IdUsuario == 6
+                               where ct.IdTema == idtema && ct.IdClasificacion == idclasif && ugct.IdUsuario == iduser
                                select new CatGrupo
                                {
                                   IdGrupo = cc.IdGrupo,
@@ -87,7 +117,7 @@ namespace APIMiri.Controllers
                             else
                             {
                                 msj.codigo = 222;
-                                msj.Descripcion = "EL GRUPO YA EXISTE";
+                                msj.Descripcion = "EL GRUPO YA EXISTE EN EL CATALOGO DE GRUPOS";
                             }
                         }
                         else

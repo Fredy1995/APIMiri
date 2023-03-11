@@ -30,16 +30,16 @@ namespace APIMiri.Controllers
             }
         }
         [HttpGet("readUsuariosSinTema/{idtema}")]
-        public async Task<ActionResult<List<MUsuariosSinTema>>> Get(int idtema)
+        public async Task<ActionResult<List<MUsuariosSinDirectorio>>> Get(int idtema)
         {
-            List<MUsuariosSinTema> must = new List<MUsuariosSinTema>();
+            List<MUsuariosSinDirectorio> must = new List<MUsuariosSinDirectorio>();
             var existeTema = await _dbContext.CatTemas.FindAsync(idtema);
             if (existeTema != null)
             {
                 var query = await _dbContext.Usuarios.Where(t => !t.TemaUsuarios.Any(d => d.IdUsuario == t.IdUsuario && d.IdTema == idtema)).ToListAsync();
                 foreach (var item in query)
                 {
-                    must.Add(new MUsuariosSinTema { idUsuario = item.IdUsuario, usuario = item.Usuario1 });
+                    must.Add(new MUsuariosSinDirectorio { idUsuario = item.IdUsuario, usuario = item.Usuario1 });
                 }
             }
          

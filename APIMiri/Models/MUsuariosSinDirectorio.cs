@@ -1,6 +1,6 @@
 ﻿namespace APIMiri.Models
 {
-    public class MUsuariosSinTema
+    public class MUsuariosSinDirectorio
     {
         public int idUsuario { get; set; }
         public string? usuario { get; set; }

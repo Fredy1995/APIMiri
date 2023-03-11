@@ -46,21 +46,21 @@ namespace APIMiri.Controllers
             }
         }
         [HttpGet("readUsuariosSinClasif/{idclasif}")]
-        public async Task<ActionResult<List<MUsuariosSinClasificacion>>> Get(int idclasif)
+        public async Task<ActionResult<List<MUsuariosSinDirectorio>>> Get(int idclasif)
         {
-            List<MUsuariosSinClasificacion> must = new List<MUsuariosSinClasificacion>();
+            List<MUsuariosSinDirectorio> musc = new List<MUsuariosSinDirectorio>();
             var obtenerIDCT = _dbContext.ClasificacionTemas.Where(c => c.IdClasificacion == idclasif).Select(c => c.IdCt).FirstOrDefault();
             if(obtenerIDCT > 0)
             {
                 var query = await _dbContext.Usuarios.Where(t => !t.UsuariosCts.Any(d => d.IdUsuario == t.IdUsuario && d.IdCt == obtenerIDCT)).ToListAsync();
                 foreach (var item in query)
                 {
-                    must.Add(new MUsuariosSinClasificacion { idUsuario = item.IdUsuario, usuario = item.Usuario1 });
+                    musc.Add(new MUsuariosSinDirectorio { idUsuario = item.IdUsuario, usuario = item.Usuario1 });
                 }
 
             }
 
-            return must;
+            return musc;
         }
         [HttpGet("readClasificaciones/{idtema}/{iduser}")]
         public async Task<ActionResult<List<MClasificaciones>>> Get(int idtema, int iduser)
