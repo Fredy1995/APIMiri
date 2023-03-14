@@ -285,15 +285,15 @@ namespace APIMiri.Controllers
             }
             return msj;
         }
-        [HttpPost("compartirGrupo/{idgrupo}/{iduser}/{permiso}")]
-        public async Task<ActionResult<respuestaAPIMiri>> Post(int idgrupo, int iduser,int permiso)
+        [HttpPost("compartirGrupo")]
+        public async Task<ActionResult<respuestaAPIMiri>> Post(MCompartirGrupo _mcompartirgrupo)
         {
             using (var dbContextTransaction = _dbContext.Database.BeginTransaction())
             {
                 try
                 {
-
-                    if (iduser <= 0 || permiso < 0 || permiso > 2 )
+                    var iduser = await _dbContext.Usuarios.Where(c => c.Usuario1 == _mcompartirgrupo._username).Select(c => c.IdUsuario).FirstOrDefaultAsync();
+                    if (iduser <= 0 || _mcompartirgrupo._permiso < 0 || _mcompartirgrupo._permiso > 2 )
                     {
                         msj.codigo = -300;
                         msj.Descripcion = "ID USUARIO NO VALIDO";
@@ -303,10 +303,10 @@ namespace APIMiri.Controllers
                         var existeUser = await _dbContext.Usuarios.FindAsync(iduser);
                         if (existeUser != null)
                         {
-                            var existeGrupo = await _dbContext.CatGrupos.FindAsync(idgrupo);
+                            var existeGrupo = await _dbContext.CatGrupos.FindAsync(_mcompartirgrupo._idDirectorio);
                             if (existeGrupo != null)
                             {
-                                var obtenerIDGCT = _dbContext.GrupoClasificacionTemas.Where(c => c.IdGrupo == idgrupo).Select(c => c.IdGct).FirstOrDefault();
+                                var obtenerIDGCT = _dbContext.GrupoClasificacionTemas.Where(c => c.IdGrupo == _mcompartirgrupo._idDirectorio).Select(c => c.IdGct).FirstOrDefault();
                                 if(obtenerIDGCT > 0)
                                 {
                                     var compartido = _dbContext.UsuariosGcts.Where(c => c.IdGct == obtenerIDGCT && c.IdUsuario == iduser).FirstOrDefault<UsuariosGct>();
@@ -316,7 +316,7 @@ namespace APIMiri.Controllers
                                         {
                                             IdUsuario = iduser,
                                             IdGct = obtenerIDGCT,
-                                            Permiso = permiso
+                                            Permiso = _mcompartirgrupo._permiso
                                         };
                                         _dbContext.UsuariosGcts.Add(ugct);
                                         await _dbContext.SaveChangesAsync();
