@@ -20,6 +20,8 @@
 
         public DateTime? FechaIngreso { get; set; }
 
+        public bool? Habilitado { get; set; }
+
         public bool? check { get; set; }
     }
 }

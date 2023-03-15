@@ -110,7 +110,7 @@ namespace APIMiri.Controllers
                                   IdPerfil =u.IdPerfil,
                                   Perfil = p.Perfil,
                                   FechaIngreso = u.FechaIngreso,
-                                  
+                                  Habilitado = u.Habilitado,
                                }).ToListAsync();
 
             return query;

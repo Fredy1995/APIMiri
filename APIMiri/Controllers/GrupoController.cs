@@ -16,6 +16,21 @@ namespace APIMiri.Controllers
         {
             _dbContext = dbContext;
         }
+        [HttpGet("devuelveObjClasif/{idGrupo}")]
+        public async Task<ActionResult<List<MClasificaciones>>> GetTema(int idGrupo)
+        {
+            var query = await (from g in _dbContext.CatGrupos
+                               join gct in _dbContext.GrupoClasificacionTemas on g.IdGrupo equals gct.IdGrupo
+                               join ct in _dbContext.ClasificacionTemas on gct.IdCt equals ct.IdCt
+                               join c in _dbContext.CatClasificacions on ct.IdClasificacion equals c.IdClasificacion
+                               where g.IdGrupo == idGrupo
+                               select new MClasificaciones
+                               {
+                                   idClasif = c.IdClasificacion,
+                                   Clasificacion = c.Clasificacion
+                               }).ToListAsync();
+            return query;
+        }
         [HttpGet("esGrupo/{nameGrupo}")]
         public async Task<ActionResult<bool>> GetEsClasif(string nameGrupo)
         {
