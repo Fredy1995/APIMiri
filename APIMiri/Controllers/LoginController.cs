@@ -109,6 +109,7 @@ namespace APIMiri.Controllers
                                    AMaterno = u.AMaterno,
                                    IdPerfil = u.IdPerfil,
                                    Habilitado = u.Habilitado,
+                                   check = false
                                }).ToListAsync();
             return query;
         }
@@ -128,6 +129,7 @@ namespace APIMiri.Controllers
                                   Perfil = p.Perfil,
                                   FechaIngreso = u.FechaIngreso,
                                   Habilitado = u.Habilitado,
+                                  check = false,
                                }).ToListAsync();
 
             return query;
@@ -203,6 +205,7 @@ namespace APIMiri.Controllers
                             existeUser.APaterno = _user.APaterno;
                             existeUser.AMaterno = _user.AMaterno;
                             existeUser.IdPerfil = _user.IdPerfil;
+                            existeUser.Habilitado = _user.Habilitado;
                         }
                        
                         await _dbContext.SaveChangesAsync();
