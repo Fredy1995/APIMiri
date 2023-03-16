@@ -10,6 +10,7 @@ using APIMiri.Data;
 using System.Security.Cryptography.Xml;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion.Internal;
 using System.Reflection.Metadata.Ecma335;
+using Azure.Core;
 
 namespace APIMiri.Controllers
 {
@@ -93,6 +94,22 @@ namespace APIMiri.Controllers
                                   Perfil = p.Perfil
                                }).ToListAsync();
 
+            return query;
+        }
+        [HttpGet("readUsuario/{idUser}")]
+        public async Task<ActionResult<List<MUsuario>>> GetUsuario(int idUser)
+        {
+            var query = await (from u in _dbContext.Usuarios
+                               where u.IdUsuario == idUser
+                               select new MUsuario
+                               {
+                                   Usuario1 = u.Usuario1,
+                                   Nombre = u.Nombre,
+                                   APaterno = u.APaterno,
+                                   AMaterno = u.AMaterno,
+                                   IdPerfil = u.IdPerfil,
+                                   Habilitado = u.Habilitado,
+                               }).ToListAsync();
             return query;
         }
         [HttpGet("readUsuarios")]
