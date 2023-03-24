@@ -23,7 +23,9 @@ namespace APIMiri.Models
             ICryptoTransform convertir = tripledes.CreateEncryptor(); // Iniciamos la conversión de la cadena
             byte[] resultado = convertir.TransformFinalBlock(arreglo, 0, arreglo.Length); //Arreglo de bytes donde guardaremos la cadena cifrada.
             tripledes.Clear();
-            return Convert.ToBase64String(resultado, 0, resultado.Length); // Convertimos la cadena y la regresamos.
+            string pwd = Convert.ToBase64String(resultado, 0, resultado.Length); // Convertimos la cadena y la regresamos.
+
+            return pwd.Replace("/", "(");
         }
         // Función para descifrar una cadena.
         public string descifrar(string cadena)

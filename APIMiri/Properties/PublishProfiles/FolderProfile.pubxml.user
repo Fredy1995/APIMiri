@@ -1,0 +1,22 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<!--
+https://go.microsoft.com/fwlink/?LinkID=208121.
+-->
+<Project>
+  <PropertyGroup>
+    <TimeStampOfAssociatedLegacyPublishXmlFile />
+    <_PublishTargetUrl>C:\inetpub\wwwroot\APIsRestfull\ApiMiri</_PublishTargetUrl>
+    <History>True|2023-03-23T15:50:01.9081105Z;True|2023-03-23T09:49:43.3514907-06:00;True|2023-03-23T09:23:57.4363703-06:00;</History>
+    <LastFailureDetails />
+  </PropertyGroup>
+  <ItemGroup>
+    <DestinationConnectionStrings Include="conexionstring">
+      <Value>Server=192.168.12.11%3b Database=dbMIRI%3bUser Id=usMIRI%3b password=u5M1r1%2a%3bTrustServerCertificate=True</Value>
+    </DestinationConnectionStrings>
+  </ItemGroup>
+  <ItemGroup>
+    <EFMigrations Include="APIMiri.Data.DbMiriContext">
+      <Value>Server=192.168.12.11%3b Database=dbMIRI%3bUser Id=usMIRI%3b password=u5M1r1%2a%3bTrustServerCertificate=True</Value>
+    </EFMigrations>
+  </ItemGroup>
+</Project>
