@@ -87,7 +87,7 @@ namespace APIMiri.Controllers
         public async Task<ActionResult<List<MPerfiles>>> GetPerfiles()
         {
             var query = await (from p in _dbContext.CatPerfiles
-                             
+                              
                                select new MPerfiles
                                {
                                   IdPerfil = p.IdPerfil,

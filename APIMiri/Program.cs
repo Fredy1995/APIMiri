@@ -15,6 +15,16 @@ builder.Services.AddDbContext<DbMiriContext>(options =>
     options.UseSqlServer(builder.Configuration.GetConnectionString("conexionstring")));
 //..............................................
 
+//Agregar politica CORS SOLO EN API WEB, en aplicación cliente no se agrega nada
+builder.Services.AddCors(p => p.AddPolicy("CorsPolicy", builder =>
+{
+
+    builder.AllowAnyHeader()
+    .AllowAnyMethod()
+    .AllowAnyOrigin();
+    
+}));
+
 
 var app = builder.Build();
 
@@ -28,6 +38,12 @@ if (app.Environment.IsDevelopment())
 app.UseHttpsRedirection();
 
 app.UseAuthorization();
+
+//app cors
+app.UseCors("CorsPolicy");
+app.UseHttpsRedirection();
+app.UseAuthorization();
+//app.UseCors(prodCorsPolicy)
 
 app.MapControllers();
 
