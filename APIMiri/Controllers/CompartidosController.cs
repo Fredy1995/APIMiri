@@ -18,6 +18,50 @@ namespace APIMiri.Controllers
             _dbContext = dbContext;
         }
 
+        [HttpGet("accesoAdirectorio/{idDirectorio}/{idUser}/{tipoD}")]
+        public async Task<ActionResult<bool>> GetActivarBtn(int idDirectorio,int idUser,string tipoD)
+        {
+            bool respuesta = false;
+            if (tipoD.Equals("t"))
+            {
+                var UserExistTema = await _dbContext.TemaUsuarios.Where(c => c.IdTema == idDirectorio && c.IdUsuario == idUser).FirstOrDefaultAsync();
+                if (UserExistTema == null)
+                {
+                    respuesta = false;
+                }
+                else
+                {
+                    respuesta = true;
+                }
+
+            }else if (tipoD.Equals("c"))
+            {
+                var obtenerIDCT = _dbContext.ClasificacionTemas.Where(c => c.IdClasificacion == idDirectorio).Select(c => c.IdCt).FirstOrDefault();
+                var UserExistClasif = await _dbContext.UsuariosCts.Where(c => c.IdCt == obtenerIDCT && c.IdUsuario == idUser).FirstOrDefaultAsync();
+                if(UserExistClasif == null)
+                {
+                    respuesta = false;
+                }
+                else
+                {
+                    respuesta = true;
+                }
+            }
+            else if (tipoD.Equals("g")){
+                var obtenerIDGCT = _dbContext.GrupoClasificacionTemas.Where(c => c.IdGrupo == idDirectorio).Select(c => c.IdGct).FirstOrDefault();
+                var UserExistGrupo = await _dbContext.UsuariosGcts.Where(c => c.IdGct == obtenerIDGCT && c.IdUsuario == idUser).FirstOrDefaultAsync();
+                if(UserExistGrupo == null)
+                {
+                    respuesta = false;
+                }
+                else
+                {
+                    respuesta = true;
+                }
+            }
+            return respuesta;
+        }
+
         [HttpGet("compartidosConmigo/{iduser}")]
         public async Task<ActionResult<List<MDirectoriosCompartidos>>> Getcompartidos(int iduser)
         {

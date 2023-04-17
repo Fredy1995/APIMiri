@@ -35,15 +35,13 @@ if (app.Environment.IsDevelopment())
     app.UseSwaggerUI();
 }
 
-app.UseHttpsRedirection();
-
-app.UseAuthorization();
-
 //app cors
 app.UseCors("CorsPolicy");
 app.UseHttpsRedirection();
+
 app.UseAuthorization();
-//app.UseCors(prodCorsPolicy)
+
+
 
 app.MapControllers();
 
