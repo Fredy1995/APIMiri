@@ -335,13 +335,19 @@ namespace APIMiri.Controllers
                                                                }).ToListAsync();
                                         foreach (var item2 in ListidGCT)
                                         {
-                                            var ugct = new UsuariosGct
+                                            //Verificar que el usuario y grupo existen en la tabla UsuariosGCT
+                                            var existeUsuarioGCT = await _dbContext.UsuariosCts.Where(c => c.IdUsuario == iduser && c.IdCt == item2.IdGct).FirstOrDefaultAsync();
+                                            if(existeUsuarioGCT == null)
                                             {
-                                                IdUsuario = iduser,
-                                                Permiso = 0, //Con permiso 0 - solo puede Leer y descargar
-                                                IdGct = item2.IdGct
-                                            };
-                                            _dbContext.UsuariosGcts.Add(ugct);
+                                                var ugct = new UsuariosGct
+                                                {
+                                                    IdUsuario = iduser,
+                                                    Permiso = 0, //Con permiso 0 - solo puede Leer y descargar
+                                                    IdGct = item2.IdGct
+                                                };
+                                                _dbContext.UsuariosGcts.Add(ugct);
+                                            }
+                                            
                                         }
                                         await _dbContext.SaveChangesAsync();
                                         dbContextTransaction.Commit();

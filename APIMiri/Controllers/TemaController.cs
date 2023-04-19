@@ -265,7 +265,7 @@ namespace APIMiri.Controllers
                             var existeTema = await _dbContext.CatTemas.FindAsync(_compartir._idDirectorio);
                             if(existeTema != null)
                             {
-                                var compartido = _dbContext.TemaUsuarios.Where(c => c.IdTema == _compartir._idDirectorio && c.IdUsuario == iduser).FirstOrDefault<TemaUsuario>();
+                                var compartido = await _dbContext.TemaUsuarios.Where(c => c.IdTema == _compartir._idDirectorio && c.IdUsuario == iduser).FirstOrDefaultAsync<TemaUsuario>();
                                 if (compartido is null)
                                 {
                                     var tu = new TemaUsuario
@@ -287,12 +287,18 @@ namespace APIMiri.Controllers
                                                           }).ToListAsync();
                                     foreach (var item in ListidCT)
                                     {
-                                        var uct = new UsuariosCt
+                                        //Verificar que el usuario y clasifición existen en la tabla UsuariosCT
+                                        var existeUsuarioCT = await _dbContext.UsuariosCts.Where(c => c.IdUsuario == iduser && c.IdCt == item.IdCt).FirstOrDefaultAsync();
+                                        if (existeUsuarioCT == null)
                                         {
-                                            IdUsuario = iduser,
-                                            IdCt = item.IdCt
-                                        };
-                                        _dbContext.UsuariosCts.Add(uct);
+                                            var uct = new UsuariosCt
+                                            {
+                                                IdUsuario = iduser,
+                                                IdCt = item.IdCt
+                                            };
+                                            _dbContext.UsuariosCts.Add(uct);
+                                        }
+                                        
 
 
                                         //Obtener todos los grupos que pertenecen a cada clasificación
@@ -306,13 +312,19 @@ namespace APIMiri.Controllers
                                                                }).ToListAsync();
                                         foreach (var item2 in ListidGCT)
                                         {
-                                            var ugct = new UsuariosGct
+                                            //Verificar que el usuario y grupo existen en la tabla UsuariosGCT
+                                            var existeUsuarioGCT = await _dbContext.UsuariosGcts.Where(c => c.IdUsuario == iduser && c.IdGct == item2.IdGct).FirstOrDefaultAsync();
+                                            if (existeUsuarioGCT == null)
                                             {
-                                                IdUsuario = iduser,
-                                                Permiso = 0, //Con permiso 0 - solo puede Leer y descargar
-                                                IdGct = item2.IdGct
-                                            };
-                                            _dbContext.UsuariosGcts.Add(ugct);
+                                                var ugct = new UsuariosGct
+                                                {
+                                                    IdUsuario = iduser,
+                                                    Permiso = 0, //Con permiso 0 - solo puede Leer y descargar
+                                                    IdGct = item2.IdGct
+                                                };
+                                                _dbContext.UsuariosGcts.Add(ugct);
+                                            }
+                                          
                                         }
 
                                     }
