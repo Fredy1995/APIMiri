@@ -12,7 +12,7 @@ namespace APIMiri.Controllers
     {
         private readonly DbMiriContext _dbContext;
         private respuestaAPIMiri msj = new respuestaAPIMiri();
-
+       
         public ClasificacionController(DbMiriContext dbContext)
         {
             _dbContext = dbContext;
@@ -65,15 +65,18 @@ namespace APIMiri.Controllers
         [HttpGet("readClasificaciones/{idtema}/{iduser}")]
         public async Task<ActionResult<List<MClasificaciones>>> Get(int idtema, int iduser)
         {
-            var query = await (from cc in _dbContext.CatClasificacions
-                               join ct in _dbContext.ClasificacionTemas on cc.IdClasificacion equals ct.IdClasificacion
-                               join uct in _dbContext.UsuariosCts on ct.IdCt equals uct.IdCt
-                               where ct.IdTema == idtema && uct.IdUsuario == iduser
-                               select new MClasificaciones
-                               {
-                                   idClasif = cc.IdClasificacion,
-                                   Clasificacion = cc.Clasificacion
-                               }).ToListAsync();
+          
+              var  query = await (from cc in _dbContext.CatClasificacions
+                                   join ct in _dbContext.ClasificacionTemas on cc.IdClasificacion equals ct.IdClasificacion
+                                   join uct in _dbContext.UsuariosCts on ct.IdCt equals uct.IdCt
+                                   where ct.IdTema == idtema && uct.IdUsuario == iduser
+                                   select new MClasificaciones
+                                   {
+                                       idClasif = cc.IdClasificacion,
+                                       Clasificacion = cc.Clasificacion
+                                   }).ToListAsync();
+            
+                
             return query;
         }
         [HttpPost("createClasificacionTema")]
@@ -116,13 +119,25 @@ namespace APIMiri.Controllers
                                     await _dbContext.SaveChangesAsync();
 
                                     var obtenerIDCT = _dbContext.ClasificacionTemas.Where(c => c.IdClasificacion == obtenerIDClasificacion).Select(c => c.IdCt).FirstOrDefault();
-
+                                    
                                     var uct = new UsuariosCt
-                                    {
-                                        IdUsuario = _clasificacionTema._idUser,
-                                        IdCt = obtenerIDCT
-                                    };
+                                     {
+                                            IdUsuario = _clasificacionTema._idUser,
+                                            IdCt = obtenerIDCT
+                                     };
                                     _dbContext.UsuariosCts.Add(uct);
+                                    /////////////////////////////////////////////////COMPARTIR A ADMIN
+                                    var perfil = await _dbContext.Usuarios.Where(c => c.IdUsuario == _clasificacionTema._idUser).Select(c => c.IdPerfil).FirstOrDefaultAsync();
+                                    if (perfil != null && perfil == 2) // si el perfil es visualizador de contenido, la clasificación es compartida al Admin
+                                    {
+                                        var uct2 = new UsuariosCt
+                                        {
+                                            IdUsuario = 46, // La clasificación creada por cualquier usuario es compartida al admin para mejor control
+                                            IdCt = obtenerIDCT
+                                        };
+                                        _dbContext.UsuariosCts.Add(uct2);
+                                    }
+                                    /////////////////////////////////////////////////COMPARTIR A ADMIN
                                     await _dbContext.SaveChangesAsync();
                                     dbContextTransaction.Commit();
                                     msj.codigo = 111;
@@ -207,15 +222,16 @@ namespace APIMiri.Controllers
         public async Task<ActionResult<respuestaAPIMiri>> DeleteClasificacion( int idclasificacion)
         {
             GrupoController _grupoController = new GrupoController(_dbContext);
-            //Obtener todos los grupos que pertenecen a cada clasificación para eliminar
+            //Obtener todos los grupos que pertenecen a la clasificación seleccionada para eliminar
+            //Este codigo lo pongo afuera de la transacción porque el metodo DeleteGrupo tiene otra transacción y marca error al contener una transaccion en otra.
             var ListidG = await (from g in _dbContext.CatGrupos
-                                   join gct in _dbContext.GrupoClasificacionTemas on g.IdGrupo equals gct.IdGrupo
-                                   join ct in _dbContext.ClasificacionTemas on gct.IdCt equals ct.IdCt
-                                   where ct.IdClasificacion == idclasificacion
-                                   select new GrupoClasificacionTema
-                                   {
-                                       IdGrupo = gct.IdGrupo
-                                   }).ToListAsync();
+                                 join gct in _dbContext.GrupoClasificacionTemas on g.IdGrupo equals gct.IdGrupo
+                                 join ct in _dbContext.ClasificacionTemas on gct.IdCt equals ct.IdCt
+                                 where ct.IdClasificacion == idclasificacion
+                                 select new GrupoClasificacionTema
+                                 {
+                                     IdGrupo = gct.IdGrupo
+                                 }).ToListAsync();
             if (ListidG.Count > 0)
             {
                 //Aqui elimino todos los grupos que pertenecen en la clasificación
@@ -237,6 +253,7 @@ namespace APIMiri.Controllers
                     else
                     {
                        
+
                         var deleteClasificacionTema = await _dbContext.ClasificacionTemas.Where(c => c.IdClasificacion == idclasificacion).FirstOrDefaultAsync<ClasificacionTema>();
                         if(deleteClasificacionTema != null)
                         {
@@ -294,6 +311,7 @@ namespace APIMiri.Controllers
         [HttpPost("compartirClasificacion")]
         public async Task<ActionResult<respuestaAPIMiri>> Post(MCompartir _compartir)
         {
+            GrupoController _gcontroller = new GrupoController(_dbContext);
             using (var dbContextTransaction = _dbContext.Database.BeginTransaction())
             {
                 try
@@ -335,9 +353,9 @@ namespace APIMiri.Controllers
                                                                }).ToListAsync();
                                         foreach (var item2 in ListidGCT)
                                         {
-                                            //Verificar que el usuario y grupo existen en la tabla UsuariosGCT
-                                            var existeUsuarioGCT = await _dbContext.UsuariosCts.Where(c => c.IdUsuario == iduser && c.IdCt == item2.IdGct).FirstOrDefaultAsync();
-                                            if(existeUsuarioGCT == null)
+                                            ////Verificar que el usuario y grupo existen en la tabla UsuariosGCT
+                                            var existeUsuarioGCT = await _dbContext.UsuariosGcts.Where(c => c.IdUsuario == iduser && c.IdGct == item2.IdGct).FirstOrDefaultAsync();
+                                            if (existeUsuarioGCT == null)
                                             {
                                                 var ugct = new UsuariosGct
                                                 {
@@ -347,7 +365,7 @@ namespace APIMiri.Controllers
                                                 };
                                                 _dbContext.UsuariosGcts.Add(ugct);
                                             }
-                                            
+
                                         }
                                         await _dbContext.SaveChangesAsync();
                                         dbContextTransaction.Commit();
@@ -358,6 +376,97 @@ namespace APIMiri.Controllers
                                     {
                                         msj.codigo = 222;
                                         msj.Descripcion = "YA SE COMPARTIÓ LA CLASIFICACIÓN CON ESTE USUARIO";
+                                    }
+                                }
+                                else
+                                {
+                                    msj.codigo = 333;
+                                    msj.Descripcion = "ID CLASIFICIACIÓN NO EXISTE EN CLASIFICIACION-TEMA";
+                                }
+                            }
+                            else
+                            {
+
+                                msj.codigo = 333;
+                                msj.Descripcion = "ID CLASIFICIACIÓN NO EXISTE";
+                            }
+                        }
+                        else
+                        {
+                            msj.codigo = 333;
+                            msj.Descripcion = "ID USUARIO NO EXISTE";
+                        }
+                    }
+                }
+                catch (Exception ex)
+                {
+                    dbContextTransaction.Rollback();
+                    msj.codigo = -200;
+                    msj.Descripcion = "PROBLEMAS CON EL SERVIDOR - Error: " + ex;
+                }
+            }
+            return msj;
+        }
+        [HttpDelete("quitarAccesoClasificacion/{idDirectorio}/{userName}")]
+        public async Task<ActionResult<respuestaAPIMiri>> DeleteAquitarAccesoClasificacion(int idDirectorio, string userName)
+        {
+            GrupoController _grupoController = new GrupoController(_dbContext);
+            //Obtener todos los grupos que pertenecen a la clasificación seleccionada para quitar acceso
+            //Este codigo lo pongo afuera de la transacción porque el metodo DeleteGrupo tiene otra transacción y marca error al contener una transaccion en otra.
+            var ListidG = await (from g in _dbContext.CatGrupos
+                                 join gct in _dbContext.GrupoClasificacionTemas on g.IdGrupo equals gct.IdGrupo
+                                 join ct in _dbContext.ClasificacionTemas on gct.IdCt equals ct.IdCt
+                                 where ct.IdClasificacion == idDirectorio
+                                 select new GrupoClasificacionTema
+                                 {
+                                     IdGrupo = gct.IdGrupo
+                                 }).ToListAsync();
+            if (ListidG.Count > 0)
+            {
+                //Aqui aqui el acceso a todos los grupos que pertenecen en la clasificación
+                foreach (var item in ListidG)
+                {
+                    await _grupoController.DeleteQuitarAccesoGrupo(item.IdGrupo, userName);
+                }
+            }
+
+            using (var dbContextTransaction = _dbContext.Database.BeginTransaction())
+            {
+                try
+                {
+                    var iduser = await _dbContext.Usuarios.Where(c => c.Usuario1 == userName).Select(c => c.IdUsuario).FirstOrDefaultAsync();
+                    if (iduser <= 0)
+                    {
+                        msj.codigo = -300;
+                        msj.Descripcion = "ID USUARIO NO VALIDO";
+                    }
+                    else
+                    {
+                       
+
+                        var existeUser = await _dbContext.Usuarios.FindAsync(iduser);
+                        if (existeUser != null)
+                        {
+                            var existeClasif = await _dbContext.CatClasificacions.FindAsync(idDirectorio);
+                            if (existeClasif != null)
+                            {
+
+                                var obtenerIDCT = _dbContext.ClasificacionTemas.Where(c => c.IdClasificacion == idDirectorio).Select(c => c.IdCt).FirstOrDefault();
+                                if (obtenerIDCT > 0)
+                                {
+                                    var deleteUsuariosCT = await _dbContext.UsuariosCts.Where(c => c.IdCt == obtenerIDCT && c.IdUsuario == iduser).ToListAsync<UsuariosCt>();
+                                    if (deleteUsuariosCT != null)
+                                    {
+                                        _dbContext.UsuariosCts.RemoveRange(deleteUsuariosCT);
+                                        await _dbContext.SaveChangesAsync();
+                                        dbContextTransaction.Commit();
+                                        msj.codigo = 666;
+                                        msj.Descripcion = "SE DEJO DE COMPARTIR EL DIRECTORIO";
+                                    }
+                                    else
+                                    {
+                                        msj.codigo = 333;
+                                        msj.Descripcion = "NO EXISTE ID CLASIFICACION TEMA EN USUARIOSCT";
                                     }
                                 }
                                 else

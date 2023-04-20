@@ -49,15 +49,15 @@ namespace APIMiri.Controllers
         [HttpGet("readTemas/{iduser}")]
         public async Task<ActionResult<List<MTemas>>> GetTemas(int iduser)
         {
-            var query = await (from ct in _dbContext.CatTemas
-                               join tu in _dbContext.TemaUsuarios on ct.IdTema equals tu.IdTema
-                               where tu.IdUsuario == iduser
-                               select new MTemas
-                               {
-                                   IdTema = ct.IdTema,
-                                   Tema = ct.Tema
-                               }).ToListAsync();
-            
+                var query = await (from ct in _dbContext.CatTemas
+                                   join tu in _dbContext.TemaUsuarios on ct.IdTema equals tu.IdTema
+                                   where tu.IdUsuario == iduser
+                                   select new MTemas
+                                   {
+                                       IdTema = ct.IdTema,
+                                       Tema = ct.Tema
+                                   }).ToListAsync();
+          
             return query;
         }
      
@@ -344,7 +344,79 @@ namespace APIMiri.Controllers
                                 msj.codigo = 333;
                                 msj.Descripcion = "ID TEMA NO EXISTE";
                             }
+                        }
+                        else
+                        {
+                            msj.codigo = 333;
+                            msj.Descripcion = "ID USUARIO NO EXISTE";
+                        }
+                    }
+                }
+                catch (Exception ex)
+                {
+                    dbContextTransaction.Rollback();
+                    msj.codigo = -200;
+                    msj.Descripcion = "PROBLEMAS CON EL SERVIDOR - Error: " + ex;
+                }
+            }
+            return msj;
+        }
+        [HttpDelete("quitarAccesoTema/{idDirectorio}/{userName}")]
+        public async Task<ActionResult<respuestaAPIMiri>> DeleteQuitarAccesoTema(int idDirectorio, string userName)
+        {
+            ClasificacionController _clasifcontroller = new ClasificacionController(_dbContext);
+            //Obtener todas las clasificaciones que pertencen a tema
+            //Este codigo lo pongo afuera de la transacción porque el metodo DeleteGrupo tiene otra transacción y marca error al contener una transaccion en otra.
+            var ListidClasif = await (from cc in _dbContext.CatClasificacions
+                                      join ct in _dbContext.ClasificacionTemas on cc.IdClasificacion equals ct.IdClasificacion
+                                      join t in _dbContext.CatTemas on ct.IdTema equals t.IdTema
+                                      where t.IdTema == idDirectorio
+                                      select new ClasificacionTema
+                                      {
+                                          IdClasificacion = ct.IdClasificacion
+                                      }).ToListAsync();
+            if (ListidClasif.Count > 0)
+            {
+                //Aqui elimino todos las clasificaciones que pertenecen a TEMA
+                foreach (var item in ListidClasif)
+                {
+                    await _clasifcontroller.DeleteAquitarAccesoClasificacion(item.IdClasificacion,userName);
+                }
+            }
 
+            using (var dbContextTransaction = _dbContext.Database.BeginTransaction())
+            {
+                try
+                {
+                    var iduser = await _dbContext.Usuarios.Where(c => c.Usuario1 == userName).Select(c => c.IdUsuario).FirstOrDefaultAsync();
+                    if (iduser <= 0)
+                    {
+                        msj.codigo = -300;
+                        msj.Descripcion = "ID USUARIO NO VALIDO";
+                    }
+                    else
+                    {
+                        var existeUser = await _dbContext.Usuarios.FindAsync(iduser);
+                        if (existeUser != null)
+                        {
+                            var existeTema = await _dbContext.CatTemas.FindAsync(idDirectorio);
+                            if (existeTema != null)
+                            {
+                                var deleteTemaUsuario = await _dbContext.TemaUsuarios.Where(c => c.IdTema == idDirectorio && c.IdUsuario == iduser).ToListAsync<TemaUsuario>();
+                                if (deleteTemaUsuario != null)
+                                {
+                                    _dbContext.TemaUsuarios.RemoveRange(deleteTemaUsuario);
+                                    await _dbContext.SaveChangesAsync();
+                                    dbContextTransaction.Commit();
+                                    msj.codigo = 666;
+                                    msj.Descripcion = "SE DEJO DE COMPARTIR EL DIRECTORIO";
+                                }
+                            }
+                            else
+                            {
+                                msj.codigo = 333;
+                                msj.Descripcion = "ID TEMA NO EXISTE";
+                            }
                         }
                         else
                         {

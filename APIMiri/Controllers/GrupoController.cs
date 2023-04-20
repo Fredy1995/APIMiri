@@ -64,17 +64,19 @@ namespace APIMiri.Controllers
         [HttpGet("readGrupo/{idtema}/{idclasif}/{iduser}")]
         public async Task<ActionResult<IEnumerable<CatGrupo>>> Get(int idtema,int idclasif,int iduser)
         {
-            var query = await (from cc in _dbContext.CatGrupos
+          
+              var  query = await (from cc in _dbContext.CatGrupos
                                join gct in _dbContext.GrupoClasificacionTemas on cc.IdGrupo equals gct.IdGrupo
                                join ct in _dbContext.ClasificacionTemas on gct.IdCt equals ct.IdCt
                                join ugct in _dbContext.UsuariosGcts on gct.IdGct equals ugct.IdGct
                                where ct.IdTema == idtema && ct.IdClasificacion == idclasif && ugct.IdUsuario == iduser
                                select new CatGrupo
                                {
-                                  IdGrupo = cc.IdGrupo,
-                                  Grupo = cc.Grupo,
-                                  IdTipoArchivo = cc.IdTipoArchivo
+                                   IdGrupo = cc.IdGrupo,
+                                   Grupo = cc.Grupo,
+                                   IdTipoArchivo = cc.IdTipoArchivo
                                }).ToListAsync();
+            
             return query;
         }
         [HttpPost("createGrupoClasificacionTema")]
@@ -123,7 +125,20 @@ namespace APIMiri.Controllers
                                         IdGct = obtenerIDGCT
                                     };
                                     _dbContext.UsuariosGcts.Add(ugct);
-                                    await _dbContext.SaveChangesAsync();
+                                /////////////////////////////////////////////////COMPARTIR A ADMIN
+                                var perfil = await _dbContext.Usuarios.Where(c => c.IdUsuario == _grupoClasificacionTema._idUser).Select(c => c.IdPerfil).FirstOrDefaultAsync();
+                                if (perfil != null && perfil == 2) // si el perfil es visualizador de contenido, la clasificación es compartida al Admin
+                                {
+                                    var ugct2 = new UsuariosGct
+                                    {
+                                        IdUsuario = 46, // El grupo creado por cualquier usuario es compartido al admin para mejor control
+                                        Permiso = 2, //Por ser el admin debe tener los permisos más altos
+                                        IdGct = obtenerIDGCT
+                                    };
+                                    _dbContext.UsuariosGcts.Add(ugct2);
+                                }
+                                /////////////////////////////////////////////////COMPARTIR A ADMIN
+                                await _dbContext.SaveChangesAsync();
                                     dbContextTransaction.Commit();
                                     msj.codigo = 111;
                                     msj.Descripcion = "GRUPO CREADO CON EXITO";
@@ -301,7 +316,7 @@ namespace APIMiri.Controllers
             return msj;
         }
         [HttpPost("compartirGrupo")]
-        public async Task<ActionResult<respuestaAPIMiri>> Post(MCompartirGrupo _mcompartirgrupo)
+        public async Task<ActionResult<respuestaAPIMiri>> PostCompartirGrupo(MCompartirGrupo _mcompartirgrupo)
         {
             using (var dbContextTransaction = _dbContext.Database.BeginTransaction())
             {
@@ -343,6 +358,75 @@ namespace APIMiri.Controllers
                                     {
                                         msj.codigo = 222;
                                         msj.Descripcion = "YA SE COMPARTIÓ EL GRUPO CON ESTE USUARIO";
+                                    }
+                                }
+                                else
+                                {
+                                    msj.codigo = 333;
+                                    msj.Descripcion = "ID GRUPO NO EXISTE EN GRUPO-CLASIFICACION-TEMA";
+                                }
+                            }
+                            else
+                            {
+
+                                msj.codigo = 333;
+                                msj.Descripcion = "ID GRUPO NO EXISTE";
+                            }
+                        }
+                        else
+                        {
+                            msj.codigo = 333;
+                            msj.Descripcion = "ID USUARIO NO EXISTE";
+                        }
+                    }
+                }
+                catch (Exception ex)
+                {
+                    dbContextTransaction.Rollback();
+                    msj.codigo = -200;
+                    msj.Descripcion = "PROBLEMAS CON EL SERVIDOR - Error: " + ex;
+                }
+            }
+            return msj;
+        }
+        [HttpDelete("quitarAccesoGrupo/{idDirectorio}/{userName}")]
+        public async Task<ActionResult<respuestaAPIMiri>> DeleteQuitarAccesoGrupo(int idDirectorio, string userName)
+        {
+            using (var dbContextTransaction = _dbContext.Database.BeginTransaction())
+            {
+                try
+                {
+                    var iduser = await _dbContext.Usuarios.Where(c => c.Usuario1 == userName).Select(c => c.IdUsuario).FirstOrDefaultAsync();
+                    if (iduser <= 0)
+                    {
+                        msj.codigo = -300;
+                        msj.Descripcion = "ID USUARIO NO VALIDO";
+                    }
+                    else
+                    {
+
+                        var existeUser = await _dbContext.Usuarios.FindAsync(iduser);
+                        if (existeUser != null)
+                        {
+                            var existeGrupo = await _dbContext.CatGrupos.FindAsync(idDirectorio);
+                            if (existeGrupo != null)
+                            {
+                                var obtenerIDGCT = _dbContext.GrupoClasificacionTemas.Where(c => c.IdGrupo == idDirectorio).Select(c => c.IdGct).FirstOrDefault();
+                                if (obtenerIDGCT > 0)
+                                {
+                                    var deleteUsuariosGCT = await _dbContext.UsuariosGcts.Where(c => c.IdGct == obtenerIDGCT && c.IdUsuario == iduser).ToListAsync<UsuariosGct>();
+                                    if (deleteUsuariosGCT != null)
+                                    {
+                                        _dbContext.UsuariosGcts.RemoveRange(deleteUsuariosGCT);
+                                        await _dbContext.SaveChangesAsync();
+                                        dbContextTransaction.Commit();
+                                        msj.codigo = 666;
+                                        msj.Descripcion = "SE DEJO DE COMPARTIR EL DIRECTORIO";
+                                    }
+                                    else
+                                    {
+                                        msj.codigo = 333;
+                                        msj.Descripcion = "NO EXISTE ID GRUPO-CLASIFICACION-TEMA EN USUARIOSGCT";
                                     }
                                 }
                                 else
