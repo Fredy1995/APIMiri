@@ -1,8 +1,7 @@
-﻿using APIMiri.Data;
-using APIMiri.Models;
-using APIMiri.Models.db;
+﻿using APIMiri.Models;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.AspNetCore.Mvc;
+using APIMiri.Data;
 
 namespace APIMiri.Controllers
 {

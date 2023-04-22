@@ -15,5 +15,13 @@ public partial class CatGrupo
 
     public int IdTipoArchivo { get; set; }
 
+    public string? Propietario { get; set; }
+
+    public DateTime? FechaCreacion { get; set; }
+
+    public string? ModificadoPor { get; set; }
+
+    public DateTime? FechaModificacion { get; set; }
+
     public virtual ICollection<GrupoClasificacionTema> GrupoClasificacionTemas { get; } = new List<GrupoClasificacionTema>();
 }

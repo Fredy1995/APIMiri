@@ -83,7 +83,9 @@ namespace APIMiri.Controllers
                             {
                                 var t = new CatTema
                                 {
-                                    Tema = _temaUsuario._tema
+                                    Tema = _temaUsuario._tema,
+                                    Propietario = await _dbContext.Usuarios.Where(c => c.IdUsuario == _temaUsuario._iduser).Select(c => c.Nombre + " " + c.APaterno +" "+c.AMaterno).FirstOrDefaultAsync(),
+                                    FechaCreacion = DateTime.Now
                                 };
                                 _dbContext.CatTemas.Add(t);
                                 await _dbContext.SaveChangesAsync();
@@ -140,6 +142,8 @@ namespace APIMiri.Controllers
                         if(existeNombreTema is null)
                         {
                             updateTema.Tema = _tema.Tema;
+                            updateTema.ModificadoPor = await _dbContext.Usuarios.Where(c => c.IdUsuario == _tema.IdUser).Select(c => c.Nombre + " " + c.APaterno + " " + c.AMaterno).FirstOrDefaultAsync();
+                            updateTema.FechaModificacion = DateTime.Now;
                             await _dbContext.SaveChangesAsync();
                             dbContextTransaction.Commit();
                             msj.codigo = 444;

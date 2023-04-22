@@ -1,7 +1,7 @@
 ﻿using Microsoft.AspNetCore.Mvc;
 using APIMiri.Models;
-using APIMiri.Models.db;
 using Microsoft.EntityFrameworkCore;
+using APIMiri.Models.db;
 using APIMiri.Data;
 
 namespace APIMiri.Controllers
@@ -101,8 +101,10 @@ namespace APIMiri.Controllers
                             {
                                 var c = new CatClasificacion
                                 {
-                                    Clasificacion = _clasificacionTema._nombreClasificacion
-                                };
+                                    Clasificacion = _clasificacionTema._nombreClasificacion,
+                                    Propietario = await _dbContext.Usuarios.Where(c => c.IdUsuario == _clasificacionTema._idUser).Select(c => c.Nombre + " " + c.APaterno + " " + c.AMaterno).FirstOrDefaultAsync(),
+                                    FechaCreacion = DateTime.Now
+                            };
                                 _dbContext.CatClasificacions.Add(c);
                                 await _dbContext.SaveChangesAsync();
                                 var obtenerIDClasificacion = _dbContext.CatClasificacions.Where(c => c.Clasificacion == _clasificacionTema._nombreClasificacion).Select(c => c.IdClasificacion).FirstOrDefault();
@@ -190,6 +192,8 @@ namespace APIMiri.Controllers
                         if(existeNombreClasif is null)
                         {
                             updateClasificacion.Clasificacion = _clasificacion.Clasificacion;
+                            updateClasificacion.ModificadoPor = await _dbContext.Usuarios.Where(c => c.IdUsuario == _clasificacion.IdUser).Select(c => c.Nombre + " " + c.APaterno + " " + c.AMaterno).FirstOrDefaultAsync();
+                            updateClasificacion.FechaModificacion = DateTime.Now;
                             await _dbContext.SaveChangesAsync();
                             dbContextTransaction.Commit();
                             msj.codigo = 444;

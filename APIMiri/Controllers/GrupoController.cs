@@ -101,7 +101,9 @@ namespace APIMiri.Controllers
                             {
                                 var g = new CatGrupo
                                 {
-                                    Grupo = _grupoClasificacionTema._nombreGrupo
+                                    Grupo = _grupoClasificacionTema._nombreGrupo,
+                                    Propietario = await _dbContext.Usuarios.Where(c => c.IdUsuario == _grupoClasificacionTema._idUser).Select(c => c.Nombre + " " + c.APaterno + " " + c.AMaterno).FirstOrDefaultAsync(),
+                                    FechaCreacion = DateTime.Now
                                 };
                                 _dbContext.CatGrupos.Add(g);
                                 await _dbContext.SaveChangesAsync();
@@ -218,7 +220,7 @@ namespace APIMiri.Controllers
             return msj;
         }
         [HttpPut("updateGrupo")]
-        public async Task<ActionResult<respuestaAPIMiri>> Put(CatGrupo _grupo)
+        public async Task<ActionResult<respuestaAPIMiri>> Put(MGrupo _grupo)
         {
 
             using (var dbContextTransaction = _dbContext.Database.BeginTransaction())
@@ -229,6 +231,8 @@ namespace APIMiri.Controllers
                     if (updateGrupo != null)
                     {
                         updateGrupo.Grupo = _grupo.Grupo;
+                        updateGrupo.ModificadoPor = await _dbContext.Usuarios.Where(c => c.IdUsuario == _grupo.IdUser ).Select(c => c.Nombre + " " + c.APaterno + " " + c.AMaterno).FirstOrDefaultAsync();
+                        updateGrupo.FechaModificacion = DateTime.Now;
                         await _dbContext.SaveChangesAsync();
                         dbContextTransaction.Commit();
                         msj.codigo = 444;

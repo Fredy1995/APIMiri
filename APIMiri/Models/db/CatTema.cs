@@ -14,6 +14,14 @@ public partial class CatTema
 
     public string Tema { get; set; } = null!;
 
+    public string? Propietario { get; set; }
+
+    public DateTime? FechaCreacion { get; set; }
+
+    public string? ModificadoPor { get; set; }
+
+    public DateTime? FechaModificacion { get; set; }
+
     public virtual ICollection<ClasificacionTema> ClasificacionTemas { get; } = new List<ClasificacionTema>();
 
     public virtual ICollection<TemaUsuario> TemaUsuarios { get; } = new List<TemaUsuario>();

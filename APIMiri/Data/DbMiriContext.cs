@@ -98,6 +98,20 @@ public partial class DbMiriContext : DbContext
                 .HasMaxLength(250)
                 .IsUnicode(false)
                 .HasColumnName("clasificacion");
+            entity.Property(e => e.FechaCreacion)
+                .HasColumnType("datetime")
+                .HasColumnName("fechaCreacion");
+            entity.Property(e => e.FechaModificacion)
+                .HasColumnType("datetime")
+                .HasColumnName("fechaModificacion");
+            entity.Property(e => e.ModificadoPor)
+                .HasMaxLength(350)
+                .IsUnicode(false)
+                .HasColumnName("modificadoPor");
+            entity.Property(e => e.Propietario)
+                .HasMaxLength(350)
+                .IsUnicode(false)
+                .HasColumnName("propietario");
         });
 
         modelBuilder.Entity<CatExtensione>(entity =>
@@ -121,11 +135,25 @@ public partial class DbMiriContext : DbContext
             entity.ToTable("CatGrupo", tb => tb.HasComment("Catalogo de grupo\r\nSi se pueden agregar nuevos grupos solo el administrador"));
 
             entity.Property(e => e.IdGrupo).HasColumnName("idGrupo");
+            entity.Property(e => e.FechaCreacion)
+                .HasColumnType("datetime")
+                .HasColumnName("fechaCreacion");
+            entity.Property(e => e.FechaModificacion)
+                .HasColumnType("datetime")
+                .HasColumnName("fechaModificacion");
             entity.Property(e => e.Grupo)
                 .HasMaxLength(150)
                 .IsUnicode(false)
                 .HasColumnName("grupo");
             entity.Property(e => e.IdTipoArchivo).HasColumnName("idTipoArchivo");
+            entity.Property(e => e.ModificadoPor)
+                .HasMaxLength(350)
+                .IsUnicode(false)
+                .HasColumnName("modificadoPor");
+            entity.Property(e => e.Propietario)
+                .HasMaxLength(350)
+                .IsUnicode(false)
+                .HasColumnName("propietario");
         });
 
         modelBuilder.Entity<CatMetadatoXarchivo>(entity =>
@@ -173,6 +201,20 @@ public partial class DbMiriContext : DbContext
             entity.ToTable("CatTema", tb => tb.HasComment("Catalogo de temas\r\n(Primera Rama)\r\nFijos no se pueden agregar mas registros!!!"));
 
             entity.Property(e => e.IdTema).HasColumnName("idTema");
+            entity.Property(e => e.FechaCreacion)
+                .HasColumnType("datetime")
+                .HasColumnName("fechaCreacion");
+            entity.Property(e => e.FechaModificacion)
+                .HasColumnType("datetime")
+                .HasColumnName("fechaModificacion");
+            entity.Property(e => e.ModificadoPor)
+                .HasMaxLength(350)
+                .IsUnicode(false)
+                .HasColumnName("modificadoPor");
+            entity.Property(e => e.Propietario)
+                .HasMaxLength(350)
+                .IsUnicode(false)
+                .HasColumnName("propietario");
             entity.Property(e => e.Tema)
                 .HasMaxLength(250)
                 .IsUnicode(false)
