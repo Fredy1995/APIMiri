@@ -2,7 +2,7 @@
 {
     public class MDetallesDirectorio
     {
-        public string Tema { get; set; } = null!;
+        public string Directorio { get; set; } = null!;
 
         public string? Propietario { get; set; }
 

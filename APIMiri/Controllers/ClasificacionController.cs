@@ -45,6 +45,7 @@ namespace APIMiri.Controllers
                 return true;
             }
         }
+       
         [HttpGet("readUsuariosSinClasif/{idclasif}")]
         public async Task<ActionResult<List<MUsuariosSinDirectorio>>> Get(int idclasif)
         {

@@ -29,21 +29,7 @@ namespace APIMiri.Controllers
                 return true;
             }
         }
-        [HttpGet("readDetallesTema/{idtema}")]
-        public async Task<ActionResult<List<MDetallesDirectorio>>> GetDetalles(int idtema)
-        {
-            List<MDetallesDirectorio> mdetalles = new List<MDetallesDirectorio>();
-            var existeTema = await _dbContext.CatTemas.FindAsync(idtema);
-            if(existeTema != null)
-            {
-                var query = await _dbContext.CatTemas.Where(c => c.IdTema == idtema).ToListAsync();
-                foreach (var item in query)
-                {
-                    mdetalles.Add(new MDetallesDirectorio { Tema = item.Tema, Propietario = item.Propietario, FechaCreacion = item.FechaCreacion, ModificadoPor = item.ModificadoPor, FechaModificacion = item.FechaModificacion });
-                }
-            }
-            return mdetalles;
-        }
+       
         [HttpGet("readUsuariosSinTema/{idtema}")]
         public async Task<ActionResult<List<MUsuariosSinDirectorio>>> Get(int idtema)
         {

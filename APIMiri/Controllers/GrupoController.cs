@@ -32,7 +32,7 @@ namespace APIMiri.Controllers
             return query;
         }
         [HttpGet("esGrupo/{nameGrupo}")]
-        public async Task<ActionResult<bool>> GetEsClasif(string nameGrupo)
+        public async Task<ActionResult<bool>> GetEsGrupo(string nameGrupo)
         {
             var existeGrupo = await _dbContext.CatGrupos.Where(c => c.Grupo == nameGrupo).FirstOrDefaultAsync<CatGrupo>();
             if (existeGrupo is null)
@@ -44,6 +44,7 @@ namespace APIMiri.Controllers
                 return true;
             }
         }
+       
         [HttpGet("readUsuariosSinGrupo/{idgrupo}")]
         public async Task<ActionResult<List<MUsuariosSinDirectorio>>> Get(int idgrupo)
         {
