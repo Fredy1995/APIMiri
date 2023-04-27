@@ -231,13 +231,23 @@ namespace APIMiri.Controllers
                     var updateGrupo = _dbContext.CatGrupos.Where(c => c.IdGrupo == _grupo.IdGrupo).FirstOrDefault<CatGrupo>();
                     if (updateGrupo != null)
                     {
-                        updateGrupo.Grupo = _grupo.Grupo;
-                        updateGrupo.ModificadoPor = await _dbContext.Usuarios.Where(c => c.IdUsuario == _grupo.IdUser ).Select(c => c.Nombre + " " + c.APaterno + " " + c.AMaterno).FirstOrDefaultAsync();
-                        updateGrupo.FechaModificacion = DateTime.Now;
-                        await _dbContext.SaveChangesAsync();
-                        dbContextTransaction.Commit();
-                        msj.codigo = 444;
-                        msj.Descripcion = "NOMBRE ACTUALIZADO CON EXITO";
+                        var existeNombreGrupo = _dbContext.CatGrupos.Where(c => c.Grupo == _grupo.Grupo).FirstOrDefault<CatGrupo>();
+                        if (existeNombreGrupo is null)
+                        {
+                            updateGrupo.Grupo = _grupo.Grupo;
+                            updateGrupo.ModificadoPor = await _dbContext.Usuarios.Where(c => c.IdUsuario == _grupo.IdUser).Select(c => c.Nombre + " " + c.APaterno + " " + c.AMaterno).FirstOrDefaultAsync();
+                            updateGrupo.FechaModificacion = DateTime.Now;
+                            await _dbContext.SaveChangesAsync();
+                            dbContextTransaction.Commit();
+                            msj.codigo = 444;
+                            msj.Descripcion = "NOMBRE ACTUALIZADO CON EXITO";
+                        }
+                        else
+                        {
+                            msj.codigo = 222;
+                            msj.Descripcion = "EL NOMBRE DEL GRUPO YA EXISTE EN EL CATALOGO DE GRUPOS";
+                        }
+
                     }
                     else
                     {

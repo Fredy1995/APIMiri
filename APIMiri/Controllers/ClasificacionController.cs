@@ -18,6 +18,7 @@ namespace APIMiri.Controllers
             _dbContext = dbContext;
 
         }
+        
         [HttpGet("devuelveObjTema/{idClasif}")]
         public async Task<ActionResult<List<MTemas>>> GetTema(int idClasif)
         {
@@ -155,7 +156,7 @@ namespace APIMiri.Controllers
                             else
                             {
                                 msj.codigo = 222;
-                                msj.Descripcion = "LA CLASIFICACION YA EXISTE";
+                                msj.Descripcion = "EL NOMBRE DE LA CLASIFICACIÓN YA EXISTE EN EL CATALOGO DE CLASIFICACIONES";
                             }
                         }
                         else

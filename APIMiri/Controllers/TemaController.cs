@@ -106,7 +106,7 @@ namespace APIMiri.Controllers
                             else
                             {
                                 msj.codigo = 222;
-                                msj.Descripcion = "EL TEMA YA EXISTE";
+                                msj.Descripcion = "EL NOMBRE DE TEMA YA EXISTE EN EL CATALOGO DE TEMAS";
                             }
                         }
                         else
